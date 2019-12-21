@@ -21,6 +21,10 @@ namespace HW
     /// </summary>
     public partial class MainWindow : Window
     {
+        private Func<List<Product>> funcUpdProducts;
+        private Action actionUpdCategories;
+        private Action<string> actionSaveCategory;
+        private Action<Product> actionSaveProduct;
         private List<Category> categories = new List<Category>();
         private bool isProduct = false;
         private Category selectedCategory;
@@ -29,19 +33,22 @@ namespace HW
         public MainWindow()
         {
             InitializeComponent();
-            ConnectItemSources();
+            funcUpdProducts = new Func<List<Product>>(UpdateProductsLB);
+            actionUpdCategories = new Action(UpdateCategoriesLB);
+            actionSaveCategory = new Action<string>(SaveOrUpdateCategory);
+            actionSaveProduct = new Action<Product>(SaveOrUpdateProduct);
+            actionUpdCategories.BeginInvoke(null, null);
+            categoriesCB.ItemsSource = categories;
+            categoriesLB.ItemsSource = categories;
         }
 
-        private void ConnectItemSources()
+        //метод для action
+        private void UpdateCategoriesLB()
         {
             using (var context = new HwContext())
             {
                 categories = context.Categories.ToList();
             }
-            categoriesLB.ItemsSource = null;
-            categoriesCB.ItemsSource = null;
-            categoriesCB.ItemsSource = categories;
-            categoriesLB.ItemsSource = categories;
         }
 
         private void CloseAll()
@@ -74,11 +81,12 @@ namespace HW
         private void CategoriesBtnClick(object sender, RoutedEventArgs e)
         {
             infoL.Content = "Выберите категорию, либо создайте её. Для просмотра продуктов выберите категорию, и нажмите кнопку \"продукты\"";
-            productsLB.Visibility = Visibility.Hidden;
             categoriesLB.Visibility = Visibility.Visible;
-            isProduct = false;
-            ConnectItemSources();
+            actionUpdCategories.BeginInvoke(null, null);
             CloseAll();
+            categoriesCB.ItemsSource = categories;
+            categoriesLB.ItemsSource = categories;
+            isProduct = false;
         }
 
         private void CreateBtnClick(object sender, RoutedEventArgs e)
@@ -98,6 +106,7 @@ namespace HW
             }
             nameL.Visibility = Visibility.Visible;
             nameTB.Visibility = Visibility.Visible;
+            nameTB.Text = string.Empty;
             saveBtn.Visibility = Visibility.Visible;
         }
 
@@ -108,65 +117,71 @@ namespace HW
                 MessageBox.Show("Введите наименование!");
                 return;
             }
-            try
-            {
-                using (var context = new HwContext())
+            selectedCategory = categoriesLB.SelectedItem as Category;
+            if (isProduct)
+                actionSaveProduct.BeginInvoke(new Product
                 {
-                    if (isProduct)
-                    {
-                        SaveOrUpdateProduct(context);
-                    }
-                    else
-                    {
-                        SaveOrUpdateCategory(context);
-                    }
+                    Category = categories[categoriesCB.SelectedIndex],
+                    Name = nameTB.Text
+                }, null, null);
+            else
+            {
+                actionSaveCategory.BeginInvoke(nameTB.Text, null, null);
+
+                categoriesLB.ItemsSource = null;
+                categoriesCB.ItemsSource = null;
+                categoriesCB.ItemsSource = categories;
+                categoriesLB.ItemsSource = categories;
+            }
+            CloseAll();
+
+        }
+
+        //метод для action
+        private void SaveOrUpdateProduct(Product product)
+        {
+            using (var context = new HwContext())
+            {
+                if (selectedProduct != null)
+                {
+                    selectedProduct = context.Products.FirstOrDefault(x => x.Id == selectedProduct.Id);
+                    selectedProduct.Name = product.Name;
+                    selectedProduct.CategoryId = product.Category.Id;
                     context.SaveChanges();
+                    return;
                 }
-                nameTB.Text = string.Empty;
-                ConnectItemSources();
-                CloseAll();
-                MessageBox.Show("Успешно создано!");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка {ex.Message}");
+                context.Products.Add(product);
+                context.SaveChanges();
             }
         }
 
-        private void SaveOrUpdateProduct(HwContext context)
+        //метод для action
+        private void SaveOrUpdateCategory(string name)
         {
-            if(selectedProduct != null)
+            using (var context = new HwContext())
             {
-                selectedProduct = context.Products.FirstOrDefault(x => x.Id == selectedProduct.Id);
-                selectedProduct.Name = nameTB.Text;
-                selectedProduct.CategoryId = selectedCategory.Id;
-                return;
-            }
-            if (categoriesCB.SelectedIndex == -1)
-            {
-                MessageBox.Show("Выберите категорию");
-                return;
-            }
-            var category = categories[categoriesCB.SelectedIndex];
-            context.Products.Add(new Product
-            {
-                CategoryId = category.Id,
-                Name = nameTB.Text
-            });
-        }
+                if (selectedCategory != null)
+                {
+                    try
+                    {
+                        var contextCategory = context.Categories.FirstOrDefault(x => x.Id == selectedCategory.Id);
+                        contextCategory.Name = name;
+                        context.SaveChanges();
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message);
+                    }
+                }
+                context.Categories.Add(new Category
+                {
+                    Name = name
+                });
+                context.SaveChanges();
+                categories = context.Categories.ToList();
 
-        private void SaveOrUpdateCategory(HwContext context)
-        {
-            if (selectedCategory != null)
-            {
-                selectedCategory = context.Categories.FirstOrDefault(x => x.Id == selectedCategory.Id);
-                selectedCategory.Name = nameTB.Text;
-                return;
             }
-            context.Categories.Add(new Category
-            {
-                Name = nameTB.Text
-            });
         }
 
         private void CategoriesLBSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -181,22 +196,27 @@ namespace HW
         private void ProductsBtnClick(object sender, RoutedEventArgs e)
         {
             infoL.Content = "Для просмотра продуктов выберите категорию, и нажмите кнопку \"продукты\"";
-            if (categoriesLB.SelectedIndex == -1) return;
-            infoL.Content = $"Продукты категории {selectedCategory.Name}";
-            CloseAll();
-            isProduct = true;
             selectedCategory = categoriesLB.SelectedItem as Category;
+            if (selectedCategory is null) return;
+            nameTB.Visibility = Visibility.Hidden;
+            nameL.Visibility = Visibility.Hidden;
+            infoL.Content = $"Продукты категории {selectedCategory.Name}";
+            isProduct = true;
             categoriesLB.Visibility = Visibility.Hidden;
             productsLB.Visibility = Visibility.Visible;
+            productsLB.ItemsSource = null;
+            var asyncResult = funcUpdProducts.BeginInvoke(null, null);
+            productsLB.ItemsSource = funcUpdProducts.EndInvoke(asyncResult);
+        }
+
+        //метод для Func
+        private List<Product> UpdateProductsLB()
+        {
             using (var context = new HwContext())
             {
                 selectedCategory = context.Categories.FirstOrDefault(x => x.Id == selectedCategory.Id);
-                if (context.Products.Where(x => x.CategoryId != selectedCategory.Id).ToList().Count != 0)
-                {
-                    productsLB.ItemsSource = null;
-                    var products = context.Products.Where(x => x.CategoryId == selectedCategory.Id).ToList();
-                    productsLB.ItemsSource = products;
-                }
+                var products = context.Products.Where(x => x.CategoryId == selectedCategory.Id).ToList();
+                return products;
             }
         }
 
@@ -205,7 +225,7 @@ namespace HW
             if (productsLB.SelectedIndex == -1) return;
             selectedProduct = productsLB.SelectedItem as Product;
             ShowProduct();
-            categoriesCB.Text = selectedProduct.Category.Name;
+            categoriesCB.Text = selectedCategory.Name;
             nameTB.Text = selectedProduct.Name;
             isProduct = true;
         }
