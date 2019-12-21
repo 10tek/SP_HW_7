@@ -5,11 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:HW"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="Admin panel" Height="450" Width="900">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="30*"/>
-            <RowDefinition Height="30*"/>
             <RowDefinition Height="30*"/>
             <RowDefinition Height="30*"/>
             <RowDefinition Height="30*"/>
@@ -17,15 +15,21 @@
             <RowDefinition Height="30*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="148*"/>
-            <ColumnDefinition Width="149*"/>
-            <ColumnDefinition Width="495*"/>
+            <ColumnDefinition Width="150*"/>
+            <ColumnDefinition Width="150*"/>
+            <ColumnDefinition Width="400*"/>
+            <ColumnDefinition Width="150*"/>
         </Grid.ColumnDefinitions>
-        <Label Content="Админ панель" HorizontalAlignment="Center" Grid.ColumnSpan="3" FontSize="16"/>
-        <Button Content="Категории" Grid.Row="1"></Button>
-        <Button Content="Продукты" Grid.Row="2"></Button>
-        <ListBox x:Name="listBox" Grid.Row="3"></ListBox>
-        <Button Content="Создать" Grid.Row="6"></Button>
-        <Button x:Name="editBtn"></Button>
+        <ListBox x:Name="categoriesLB" Grid.Row="2" Grid.RowSpan="2" Background="AliceBlue" SelectionChanged="CategoriesLBSelectionChanged"></ListBox>
+        <ListBox x:Name="productsLB" Grid.Row="2" Grid.RowSpan="2" Background="AntiqueWhite" ></ListBox>
+        <Button x:Name="categoriesBtn" Content="Категории" Click="CategoriesBtnClick"></Button>
+        <Button x:Name="productsBtn" Content="Продукты" Grid.Row="1" Click="ProductsBtnClick"></Button>
+        <Button Content="Создать" Grid.Row="4" Click="CreateBtnClick"></Button>
+        <Button Visibility="Hidden" x:Name="saveBtn" Content="Сохранить" Grid.Column="3" Grid.Row="4" Click="SaveBtnClick"></Button>
+        <Label x:Name="infoL" Grid.Column="1" Grid.ColumnSpan="3"></Label>
+        <Label Visibility="Hidden" x:Name="categoriesL" Content="Выберите категорию:" Grid.Column="1" Grid.Row="1"></Label>
+        <Label Visibility="Hidden" x:Name="nameL" Content="Введите наименование:" Grid.Column="1" Grid.Row="2"></Label>
+        <ComboBox Visibility="Hidden" x:Name="categoriesCB" Foreground="Black" Grid.Column="2" Grid.Row="1"></ComboBox>
+        <TextBox Visibility="Hidden" x:Name="nameTB" Grid.Row="2" Grid.Column="2"></TextBox>
     </Grid>
 </Window>
