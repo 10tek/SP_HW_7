@@ -21,7 +21,7 @@
             <ColumnDefinition Width="150*"/>
         </Grid.ColumnDefinitions>
         <ListBox x:Name="categoriesLB" Grid.Row="2" Grid.RowSpan="2" Background="AliceBlue" SelectionChanged="CategoriesLBSelectionChanged"></ListBox>
-        <ListBox x:Name="productsLB" Grid.Row="2" Grid.RowSpan="2" Background="AntiqueWhite" ></ListBox>
+        <ListBox x:Name="productsLB" Grid.Row="2" Grid.RowSpan="2" Background="AntiqueWhite" SelectionChanged="ProductsLBSelectionChanged" ></ListBox>
         <Button x:Name="categoriesBtn" Content="Категории" Click="CategoriesBtnClick"></Button>
         <Button x:Name="productsBtn" Content="Продукты" Grid.Row="1" Click="ProductsBtnClick"></Button>
         <Button Content="Создать" Grid.Row="4" Click="CreateBtnClick"></Button>
